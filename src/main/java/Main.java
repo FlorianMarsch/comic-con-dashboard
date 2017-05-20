@@ -2,7 +2,9 @@ import static spark.Spark.get;
 import static spark.SparkBase.port;
 import static spark.SparkBase.staticFileLocation;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.Normalizer;
 import java.util.ArrayList;
@@ -70,15 +72,8 @@ public class Main {
 
 	public Integer reciveCurrentGameday() {
 		try {
-			String html = null;
 			String urlString = "http://stats.comunio.de/";
-			InputStream is = (InputStream) new URL(urlString).getContent();
-			html = IOUtils.toString(is, "UTF-8");
-
-			html = Normalizer.normalize(html, Normalizer.Form.NFD);
-			html = html.replaceAll("[^\\p{ASCII}]", "");
-
-			Document doc = Jsoup.parse(html);
+			Document doc = getDocument(urlString);
 			Elements lines = doc.select(".folded h2");
 
 			for (int i = 0; i < lines.size(); i++) {
@@ -104,15 +99,8 @@ public class Main {
 			return new ArrayList<>();
 		}
 		try {
-			String html = null;
 			String urlString = "http://stats.comunio.de/matchday/" + season + "/" + number;
-			InputStream is = (InputStream) new URL(urlString).getContent();
-			html = IOUtils.toString(is, "UTF-8");
-
-			html = Normalizer.normalize(html, Normalizer.Form.NFD);
-			html = html.replaceAll("[^\\p{ASCII}]", "");
-
-			Document doc = Jsoup.parse(html);
+			Document doc = getDocument(urlString);
 			Elements lines = doc.select(" .zoomable a");
 			// http://stats.comunio.de/matchdetails.php?mid=3363
 
@@ -136,8 +124,8 @@ public class Main {
 			return new ArrayList<>();
 		}
 		try {
-			String html = null;
 			String urlString = "http://stats.comunio.de/matchdetails.php?mid=" + page;
+			String html = null;
 			InputStream is = (InputStream) new URL(urlString).getContent();
 			html = IOUtils.toString(is, "UTF-8");
 
@@ -158,15 +146,8 @@ public class Main {
 			return new HashSet<>();
 		}
 		try {
-			String html = null;
 			String urlString = "http://classic.comunio.de/teamInfo.phtml?tid=" + id;
-			InputStream is = (InputStream) new URL(urlString).getContent();
-			html = IOUtils.toString(is, "UTF-8");
-
-			html = Normalizer.normalize(html, Normalizer.Form.NFD);
-			html = html.replaceAll("[^\\p{ASCII}]", "");
-
-			Document doc = Jsoup.parse(html);
+			Document doc = getDocument(urlString);
 			Elements tables = doc.select(" .tablecontent03 tbody");
 			Element transferTable = tables.get(2);// third table
 
@@ -196,15 +177,8 @@ public class Main {
 			return new HashSet<>();
 		}
 		try {
-			String html = null;
 			String urlString = "http://classic.comunio.de/playerInfo.phtml?pid=" + id;
-			InputStream is = (InputStream) new URL(urlString).getContent();
-			html = IOUtils.toString(is, "UTF-8");
-
-			html = Normalizer.normalize(html, Normalizer.Form.NFD);
-			html = html.replaceAll("[^\\p{ASCII}]", "");
-
-			Document doc = Jsoup.parse(html);
+			Document doc = getDocument(urlString);
 			Elements lines = doc.select(".name_cont");
 
 			Set<String> teamList = new HashSet<String>();
@@ -224,6 +198,18 @@ public class Main {
 			e.printStackTrace();
 			throw new RuntimeException("abbruch", e);
 		}
+	}
+
+	Document getDocument(String urlString) throws IOException, MalformedURLException {
+		String html = null;
+		InputStream is = (InputStream) new URL(urlString).getContent();
+		html = IOUtils.toString(is, "UTF-8");
+
+		html = Normalizer.normalize(html, Normalizer.Form.NFD);
+		html = html.replaceAll("[^\\p{ASCII}]", "");
+
+		Document doc = Jsoup.parse(html);
+		return doc;
 	}
 
 }
