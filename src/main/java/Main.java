@@ -125,15 +125,8 @@ public class Main {
 		}
 		try {
 			String urlString = "http://stats.comunio.de/matchdetails.php?mid=" + page;
-			String html = null;
-			InputStream is = (InputStream) new URL(urlString).getContent();
-			html = IOUtils.toString(is, "UTF-8");
-
-			html = Normalizer.normalize(html, Normalizer.Form.NFD);
-			html = html.replaceAll("[^\\p{ASCII}]", "");
-
+			String html = getResource(urlString);
 			Matchdetails details = mapper.readValue(html, Matchdetails.class);
-
 			return details.getScorer();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -201,15 +194,19 @@ public class Main {
 	}
 
 	Document getDocument(String urlString) throws IOException, MalformedURLException {
+		String html = getResource(urlString);
+		Document doc = Jsoup.parse(html);
+		return doc;
+	}
+
+	String getResource(String urlString) throws IOException, MalformedURLException {
 		String html = null;
 		InputStream is = (InputStream) new URL(urlString).getContent();
 		html = IOUtils.toString(is, "UTF-8");
 
 		html = Normalizer.normalize(html, Normalizer.Form.NFD);
 		html = html.replaceAll("[^\\p{ASCII}]", "");
-
-		Document doc = Jsoup.parse(html);
-		return doc;
+		return html;
 	}
 
 }
