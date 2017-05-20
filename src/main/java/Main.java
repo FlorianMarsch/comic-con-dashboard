@@ -54,6 +54,10 @@ public class Main {
 			Set<String> recivedTransfers = reciveTransfers(id);
 			return mapper.writeValueAsString(recivedTransfers);
 		});
+		get("/api/currentGameday", (request, response) -> {
+			Integer currentGameday = reciveCurrentGameday();
+			return mapper.writeValueAsString(currentGameday);
+		});
 
 		get("/api/gameday/:season/:number", (request, response) -> {
 			String season = request.params(":season");
@@ -62,6 +66,37 @@ public class Main {
 			return mapper.writeValueAsString(recivedScores);
 		});
 
+	}
+
+	public Integer reciveCurrentGameday() {
+		try {
+			String html = null;
+			String urlString = "http://stats.comunio.de/";
+			InputStream is = (InputStream) new URL(urlString).getContent();
+			html = IOUtils.toString(is, "UTF-8");
+
+			html = Normalizer.normalize(html, Normalizer.Form.NFD);
+			html = html.replaceAll("[^\\p{ASCII}]", "");
+
+			Document doc = Jsoup.parse(html);
+			Elements lines = doc.select(".folded h2");
+
+			for (int i = 0; i < lines.size(); i++) {
+				Element line = lines.get(i);
+				String tempGameday = line.html();
+				if (tempGameday.contains("Spieltag")) {
+					tempGameday = StringEscapeUtils.unescapeHtml(tempGameday);
+					int endIndex = tempGameday.indexOf(".");
+					
+					Integer gameday = Integer.valueOf(tempGameday.substring(0, endIndex));
+					return gameday;
+				}
+			}
+			return 0;
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("abbruch", e);
+		}
 	}
 
 	public List<Score> reciveResults(String season, String number) {
