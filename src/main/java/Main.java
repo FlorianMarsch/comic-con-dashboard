@@ -5,23 +5,23 @@ import static spark.SparkBase.staticFileLocation;
 import java.io.InputStream;
 import java.net.URL;
 import java.text.Normalizer;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Map;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringEscapeUtils;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import spark.ModelAndView;
-import spark.template.freemarker.FreeMarkerEngine;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import vo.Matchdetails;
+import vo.Score;
 
 public class Main {
 
@@ -31,105 +31,125 @@ public class Main {
 
 	}
 
+	public Main() {
+		// DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES
+		mapper = new ObjectMapper();
+		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+	}
+
+	private ObjectMapper mapper;
+
 	public void init() {
 		port(Integer.valueOf(System.getenv("PORT")));
 		staticFileLocation("/public");
 
 		get("/api/lineup/:id", (request, response) -> {
-
 			String id = request.params(":id");
 			Set<String> recivedLineUp = reciveLineUp(id);
-			Set<JSONObject> recivedPossiblePlayers = recivePossiblePlayers("1");
-			Map<String, Object> attributes = new HashMap<>();
+			return mapper.writeValueAsString(recivedLineUp);
+		});
 
-			JSONArray data = new JSONArray();
-			for (String playerName : recivedLineUp) {
-				JSONArray matches = getMatches(recivedPossiblePlayers, playerName);
-				JSONObject match = getMatched(matches, playerName);
-				JSONObject temp = new JSONObject();
-				try {
-					temp.put("name", playerName);
-					temp.put("matches", matches);
-					temp.put("match", match);
-				} catch (Exception e) {
-					e.printStackTrace();
-					throw new RuntimeException("abbruch", e);
-				}
-				data.put(temp);
-			}
-			attributes.put("data", data.toString());
+		get("/api/transfers/:id", (request, response) -> {
+			String id = request.params(":id");
+			Set<String> recivedTransfers = reciveTransfers(id);
+			return mapper.writeValueAsString(recivedTransfers);
+		});
 
-			return new ModelAndView(attributes, "json.ftl");
-		} , new FreeMarkerEngine());
+		get("/api/gameday/:season/:number", (request, response) -> {
+			String season = request.params(":season");
+			String number = request.params(":number");
+			List<Score> recivedScores = reciveResults(season, number);
+			return mapper.writeValueAsString(recivedScores);
+		});
+
 	}
 
-	public JSONObject getMatched(JSONArray matches, String playerName) {
-		if (matches.length() == 0) {
-			return null;
+	public List<Score> reciveResults(String season, String number) {
+		if (season == null || number == null || season.trim().isEmpty() || number.trim().isEmpty()) {
+			return new ArrayList<>();
 		}
-		if (matches.length() == 1) {
-			try {
-				return matches.getJSONObject(0);
-			} catch (JSONException e) {
-				e.printStackTrace();
-				throw new RuntimeException("abbruch", e);
-			}
-		}
-		String[] split = playerName.split(" ");
-		String surname = split[0].replace(".", "");
-		int length = surname.length();
+		try {
+			String html = null;
+			String urlString = "http://stats.comunio.de/matchday/" + season + "/" + number;
+			InputStream is = (InputStream) new URL(urlString).getContent();
+			html = IOUtils.toString(is, "UTF-8");
 
-		for (int i = 0; i < matches.length(); i++) {
-			try {
-				JSONObject player = matches.getJSONObject(i);
-				String[] split2 = player.getString("name").split(" ");
-				String surname2 = split2[0].replace(".", "");
-				String shortsurname2 = surname2.substring(0, length);
-				if(surname.equalsIgnoreCase(shortsurname2)){
-					return player;
-				}
-			} catch (JSONException e) {
-				e.printStackTrace();
-				throw new RuntimeException("abbruch", e);
-			}
+			html = Normalizer.normalize(html, Normalizer.Form.NFD);
+			html = html.replaceAll("[^\\p{ASCII}]", "");
 
+			Document doc = Jsoup.parse(html);
+			Elements lines = doc.select(" .zoomable a");
+			// http://stats.comunio.de/matchdetails.php?mid=3363
+
+			List<Score> goals = new ArrayList<>();
+			for (int i = 0; i < lines.size(); i++) {
+				Element line = lines.get(i);
+				String page = line.attr("id").replace("_lnk", "").replace("m", "");
+
+				goals.addAll(getGoals(page));
+			}
+			System.out.println(goals);
+			return goals;
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("abbruch", e);
 		}
-		return null;
 	}
 
-	public JSONArray getMatches(Set<JSONObject> recivedPossiblePlayers, String playerName) {
-		JSONArray matched = new JSONArray();
-		for (JSONObject player : recivedPossiblePlayers) {
-			try {
-				String[] split = playerName.split(" ");
-				String lastname = split[split.length - 1];
-				if (player.getString("lastname").equalsIgnoreCase(lastname)) {
-					matched.put(player);
-				}
-			} catch (JSONException e) {
-				e.printStackTrace();
-				throw new RuntimeException("abbruch", e);
-			}
+	public List<Score> getGoals(String page) {
+		if (page == null || page.trim().isEmpty()) {
+			return new ArrayList<>();
 		}
-		return matched;
+		try {
+			String html = null;
+			String urlString = "http://stats.comunio.de/matchdetails.php?mid=" + page;
+			InputStream is = (InputStream) new URL(urlString).getContent();
+			html = IOUtils.toString(is, "UTF-8");
+
+			html = Normalizer.normalize(html, Normalizer.Form.NFD);
+			html = html.replaceAll("[^\\p{ASCII}]", "");
+
+			Matchdetails details = mapper.readValue(html, Matchdetails.class);
+
+			return details.getScorer();
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("abbruch", e);
+		}
 	}
 
-	public Set<JSONObject> recivePossiblePlayers(String id) {
-		if (id == null | id.trim().isEmpty()) {
+	public Set<String> reciveTransfers(String id) {
+		if (id == null || id.trim().isEmpty()) {
 			return new HashSet<>();
 		}
-		Set<JSONObject> playerList = new HashSet<JSONObject>();
 		try {
-			String json = null;
-			String urlString = "http://football-api.florianmarsch.de/v1/api/league/" + id + "/players.json";
+			String html = null;
+			String urlString = "http://classic.comunio.de/teamInfo.phtml?tid=" + id;
 			InputStream is = (InputStream) new URL(urlString).getContent();
-			json = IOUtils.toString(is, "ISO-8859-1");
-			JSONArray players = new JSONArray(json);
-			for (int i = 0; i < players.length(); i++) {
-				JSONObject player = players.getJSONObject(i);
-				playerList.add(player);
+			html = IOUtils.toString(is, "UTF-8");
+
+			html = Normalizer.normalize(html, Normalizer.Form.NFD);
+			html = html.replaceAll("[^\\p{ASCII}]", "");
+
+			Document doc = Jsoup.parse(html);
+			Elements tables = doc.select(" .tablecontent03 tbody");
+			Element transferTable = tables.get(2);// third table
+
+			Elements lines = transferTable.select("td:first-child");
+
+			Set<String> teamList = new HashSet<String>();
+			for (int i = 1; i < lines.size(); i++) {
+				Element line = lines.get(i);
+				String tempName = line.html();
+				tempName = StringEscapeUtils.unescapeHtml(tempName);
+				String norm = Normalizer.normalize(tempName, Normalizer.Form.NFD);
+				norm = norm.replaceAll("[^\\p{ASCII}]", "");
+				String trim = norm.trim();
+
+				teamList.add(trim);
 			}
-			return playerList;
+			System.out.println(teamList);
+			return teamList;
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("abbruch", e);
@@ -137,7 +157,7 @@ public class Main {
 	}
 
 	public Set<String> reciveLineUp(String id) {
-		if (id == null | id.trim().isEmpty()) {
+		if (id == null || id.trim().isEmpty()) {
 			return new HashSet<>();
 		}
 		try {
