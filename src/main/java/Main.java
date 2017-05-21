@@ -62,7 +62,7 @@ public class Main {
 			return mapper.writeValueAsString(currentGameday);
 		});
 
-		get("/api/gameday/:season/:number", (request, response) -> {
+		get("/api/result/:season/:number", (request, response) -> {
 			String season = request.params(":season");
 			String number = request.params(":number");
 			List<Score> recivedScores = reciveResults(season, number);
