@@ -1,8 +1,11 @@
 package server;
 
 import static spark.Spark.exception;
-import static spark.SparkBase.*;
+import static spark.SparkBase.port;
+import static spark.SparkBase.staticFileLocation;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -13,6 +16,9 @@ import spark.Spark;
 
 public class Server {
 
+	private ObjectMapper mapper;
+	private List<String> routes = new ArrayList<>();
+	
 	public Server() {
 		// DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES
 		mapper = new ObjectMapper();
@@ -36,11 +42,20 @@ public class Server {
 				response.body("{\"error\":\"error\"}");
 			}
 		});
+		
+		Spark.get("/", (request, response) -> {
+			response.status(200);
+			response.header("Content-Type", "application/json");
+			return mapper.writeValueAsString(routes);
+		});
 	}
 
-	private ObjectMapper mapper;
+	
 
 	public void get(String path, Route route) {
+		
+		routes.add("GET "+path);
+		
 		Spark.get(path, (request, response) -> {
 			Object result = route.handle(request, response);
 			response.status(200);
