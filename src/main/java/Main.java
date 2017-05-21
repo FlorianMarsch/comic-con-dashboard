@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import vo.Matchdetails;
 import vo.Score;
+import vo.Season;
 
 public class Main {
 
@@ -57,7 +58,7 @@ public class Main {
 			return mapper.writeValueAsString(recivedTransfers);
 		});
 		get("/api/currentGameday", (request, response) -> {
-			Integer currentGameday = reciveCurrentGameday();
+			Season currentGameday = reciveCurrentGameday();
 			return mapper.writeValueAsString(currentGameday);
 		});
 
@@ -70,24 +71,29 @@ public class Main {
 
 	}
 
-	public Integer reciveCurrentGameday() {
+	public Season reciveCurrentGameday() {
 		try {
-			String urlString = "http://stats.comunio.de/";
+			String urlString = "http://stats.comunio.de/matchday";
 			Document doc = getDocument(urlString);
-			Elements lines = doc.select(".folded h2");
+			Elements lines = doc.select("#inhalt h3");
 
+			Season result = new Season();
+			
 			for (int i = 0; i < lines.size(); i++) {
 				Element line = lines.get(i);
 				String tempGameday = line.html();
 				if (tempGameday.contains("Spieltag")) {
 					tempGameday = StringEscapeUtils.unescapeHtml(tempGameday);
-					int endIndex = tempGameday.indexOf(".");
+					String[] split = tempGameday.split(". Spieltag ");
 					
-					Integer gameday = Integer.valueOf(tempGameday.substring(0, endIndex));
-					return gameday;
+					Integer gameday = Integer.valueOf(split[0]);
+					String season = split[1].replace("/", "-");
+					result.setGameday(gameday);
+					result.setSeason(season);
+					return result;
 				}
 			}
-			return 0;
+			return result;
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("abbruch", e);
