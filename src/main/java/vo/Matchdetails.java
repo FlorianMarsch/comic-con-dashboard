@@ -15,7 +15,7 @@ public class Matchdetails {
 
 			Goal goal = g.get(i);
 			Score score = new Score();
-			score.setId(p + "-" + i);
+			score.setId(p + "-" + i+"-"+goal.getN());
 			score.setName(goal.getN());
 			score.setEvent("Goal");
 
