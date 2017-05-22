@@ -2,6 +2,7 @@ import server.Server;
 import service.GamedayService;
 import service.LineUpService;
 import service.ResultService;
+import service.TableService;
 import service.TransferService;
 
 public class Main {
@@ -21,6 +22,11 @@ public class Main {
 		server.get("/api/transfers/:id", (request, response) -> {
 			String id = request.params(":id");
 			return new TransferService().reciveTransfers(id);
+		});
+		
+		server.get("/api/table/:id", (request, response) -> {
+			String id = request.params(":id");
+			return new TableService().reciveTable(id);
 		});
 
 		server.get("/api/currentGameday", (request, response) -> {
