@@ -9,7 +9,10 @@ public class Goal {
 		return n;
 	}
 	public void setN(String n) {
-		this.n = n;
+		if(n == null || n.trim().isEmpty()){
+			this.n = null;
+		}
+		this.n = n.trim();
 	}
 	public Integer getP() {
 		return p;
