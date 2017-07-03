@@ -57,10 +57,11 @@
 								<img ng-src="{{x.logo.url}}" >
 							</a>
 							<div class="caption">
-					          <p>{{x.name.text}} </p>
+					          <p>{{x.name.text}}</p>
+					          <p>{{x.start.local| date:'dd.MM.yyyy HH:mm'}} &nbsp; - &nbsp;  {{x.end.local | date:'dd.MM.yyyy HH:mm'}}</p>
 					          <p> {{x.price_range}}</p>
-					          <p>remaining: {{x.ticket_availability.remaining_capacity}}</p>
-					          <p>sold: {{x.ticket_availability.quantity_sold}}</p>
+					          <p>remaining: {{x.ticket_availability.remaining_capacity}} &nbsp; sold: {{x.ticket_availability.quantity_sold}}</p>
+					          <p></p>
 					        </div>
 							
 						</div> 
