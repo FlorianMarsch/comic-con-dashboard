@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+
+
+
+        <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+
+        <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
+        <!-- Latest compiled and minified CSS -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+
+
+
+
+
+        <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css">
+
+
+
+        <!-- Latest compiled and minified JavaScript -->
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+
+        <link href="https://fonts.googleapis.com/css?family=Alegreya+Sans+SC|Bubbler+One" rel="stylesheet">
+
+      
+    </head>
+
+    <body ng-app="dashboard" ng-controller="formCtrl">
+
+
+
+        <div class="panel panel-default col-xs-12 col-md-4">
+        </div>
+
+        <div class="panel panel-default col-xs-12">
+
+            <div class="panel-body" >
+
+                
+  				<div class="panel-heading">{{eventbrite.page_title}}</div>
+				
+					
+					<div  class="col-xs-12 col-md-4" ng-repeat="x in eventbrite.events"  >
+						<div class="thumbnail">
+							<a href="{{x.url}}">
+								<img ng-src="{{x.logo.url}}" >
+							</a>
+							<div class="caption">
+					          <p>{{x.name.text}} </p>
+					          <p> {{x.price_range}}</p>
+					          <p>remaining: {{x.ticket_availability.remaining_capacity}}</p>
+					          <p>sold: {{x.ticket_availability.quantity_sold}}</p>
+					        </div>
+							
+						</div> 
+					</div>
+					
+				 
+						
+            </div>
+
+        </div>
+
+
+        <script type="application/javascript">
+            var app = angular.module('dashboard', []);
+            app.controller('formCtrl', function($scope, $http, $timeout) {
+                $scope.eventbrite = {};
+				 
+				$http({
+					method: 'GET',
+					url: './api/ticket'
+				}).
+				then(function(response) {
+					$scope.eventbrite = response.data;
+				});
+            });
+        </script>
+    </body>
+</html>

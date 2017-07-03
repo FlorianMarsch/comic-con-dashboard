@@ -43,7 +43,7 @@ public class Server {
 			}
 		});
 		
-		Spark.get("/", (request, response) -> {
+		Spark.get("/api/routes", (request, response) -> {
 			response.status(200);
 			response.header("Content-Type", "application/json");
 			return mapper.writeValueAsString(routes);
