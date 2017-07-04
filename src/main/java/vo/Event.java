@@ -8,6 +8,7 @@ public class Event {
 	private Date start;
 	private Date end;
 	private Name name;
+	private Venue venue;
 	
 	public String getPrice_range() {
 		return price_range;
@@ -50,6 +51,12 @@ public class Event {
 	}
 	public void setName(Name name) {
 		this.name = name;
+	}
+	public Venue getVenue() {
+		return venue;
+	}
+	public void setVenue(Venue venue) {
+		this.venue = venue;
 	}
 	
 	
